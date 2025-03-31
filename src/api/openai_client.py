@@ -1,5 +1,5 @@
 import os
-from openai import OpenAI
+import openai
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -12,7 +12,7 @@ class OpenAIClient:
             raise ValueError("OpenAI API key is required")
 
         self.model = model or os.getenv("MODEL_NAME", "gpt-4")
-        self.client = OpenAI(api_key=self.api_key)
+        self.client = openai.OpenAI(api_key=self.api_key)
 
     def generate_text(self, prompt, max_tokens=None, temperature=None):
         """
@@ -39,3 +39,24 @@ class OpenAIClient:
         )
 
         return response.choices[0].message.content
+    
+    def generate_with_file(self):
+        print(os.getcwd())
+        uploaded_file = self.client.files.create(
+            file=open("res/old_exams/provpass-3-verb-utan-elf.pdf", "rb"),
+            purpose="assistants"
+        )
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": "You generate multiple-choice quiz questions based on PDF content."},
+                {"role": "user", "content": "Please generate 3 multiple-choice questions based on this PDF."}
+            ],
+            max_tokens=None,
+            temperature=None,
+            tools=[{"type": "file_search"}],  # enables file searching
+            tool_choice="auto",  # let GPT decide
+            file_ids=[uploaded_file.id]
+        )
+        return response.choices[0].message.content
+

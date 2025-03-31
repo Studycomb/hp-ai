@@ -4,5 +4,5 @@ from src.api.openai_client import OpenAIClient
 client = OpenAIClient()
 
 # Generate text
-response = client.generate_text("Tell me about artificial intelligence")
+response = client.generate_with_file()
 print(response)
