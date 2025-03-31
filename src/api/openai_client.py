@@ -1,5 +1,6 @@
 import os
-import openai
+from openai import OpenAI
+import time
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -12,7 +13,67 @@ class OpenAIClient:
             raise ValueError("OpenAI API key is required")
 
         self.model = model or os.getenv("MODEL_NAME", "gpt-4")
-        self.client = openai.OpenAI(api_key=self.api_key)
+        self.client = OpenAI(api_key=self.api_key)
+        self.assistant = self._create_assistant()
+
+    def _create_assistant(self):
+        assistant = self.client.beta.assistants.create(
+            name="Quiz Generator",
+            instructions="You generate multiple-choice quiz questions based on PDF content.",
+            model=self.model,
+            tools=[{"type": "file_search"}]
+        )
+        return assistant
+    
+    def _upload_file(self, file_path: str) -> str:
+        """Upload a PDF file and return the file ID."""
+        uploaded_file = self.client.files.create(
+            file=open(file_path, "rb"),
+            purpose="assistants"
+        )
+        return uploaded_file.id
+
+    def _wait_for_run(self, thread_id: str, run_id: str):
+        """Poll the run status until completion."""
+        while True:
+            run_status = self.client.beta.threads.runs.retrieve(
+                thread_id=thread_id,
+                run_id=run_id
+            )
+            if run_status.status == "completed":
+                return
+            elif run_status.status in ["failed", "expired", "cancelled"]:
+                raise Exception(f"Run failed with status: {run_status.status}")
+            time.sleep(1)
+    
+    def generate_quiz_from_pdf(self, file_path: str) -> str:
+        """Full pipeline: upload PDF → run assistant → return quiz text."""
+        message = "Please generate 3 multiple-choice quiz questions based on this PDF."
+        file_id = self._upload_file(file_path)
+
+        thread = self.client.beta.threads.create()
+
+        self.client.beta.threads.messages.create(
+            thread_id=thread.id,
+            role="user",
+            content=message,
+            file_ids=[file_id]
+        )
+
+        run = self.client.beta.threads.runs.create(
+            thread_id=thread.id,
+            assistant_id=self.assistant.id
+        )
+
+        self._wait_for_run(thread.id, run.id)
+
+        messages = self.client.beta.threads.messages.list(thread_id=thread.id)
+        for msg in messages.data[::-1]:  # Newest first
+            if msg.role == "assistant":
+                return msg.content[0].text.value
+        
+        return "No response from assistant."
+
 
     def generate_text(self, prompt, max_tokens=None, temperature=None):
         """
@@ -39,24 +100,3 @@ class OpenAIClient:
         )
 
         return response.choices[0].message.content
-    
-    def generate_with_file(self):
-        print(os.getcwd())
-        uploaded_file = self.client.files.create(
-            file=open("res/old_exams/provpass-3-verb-utan-elf.pdf", "rb"),
-            purpose="assistants"
-        )
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": "You generate multiple-choice quiz questions based on PDF content."},
-                {"role": "user", "content": "Please generate 3 multiple-choice questions based on this PDF."}
-            ],
-            max_tokens=None,
-            temperature=None,
-            tools=[{"type": "file_search"}],  # enables file searching
-            tool_choice="auto",  # let GPT decide
-            file_ids=[uploaded_file.id]
-        )
-        return response.choices[0].message.content
-
