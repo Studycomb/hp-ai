@@ -12,7 +12,7 @@ class OpenAIClient:
         if not self.api_key:
             raise ValueError("OpenAI API key is required")
 
-        self.model = model or os.getenv("MODEL_NAME", "gpt-4")
+        self.model = model or os.getenv("MODEL_NAME", "gpt-4o-mini")
         self.client = OpenAI(api_key=self.api_key)
         self.assistant = self._create_assistant()
 
@@ -24,7 +24,7 @@ class OpenAIClient:
             tools=[{"type": "file_search"}]
         )
         return assistant
-    
+
     def _upload_file(self, file_path: str) -> str:
         """Upload a PDF file and return the file ID."""
         uploaded_file = self.client.files.create(
@@ -32,7 +32,7 @@ class OpenAIClient:
             purpose="assistants"
         )
         return uploaded_file.id
-    
+
     def _create_vector_store_with_file(self, file_id: str):
         """Create a vector store and attach the uploaded file."""
         vector_store = self.client.vector_stores.create(
@@ -53,7 +53,7 @@ class OpenAIClient:
             elif run_status.status in ["failed", "expired", "cancelled"]:
                 raise Exception(f"Run failed with status: {run_status.status}")
             time.sleep(1)
-    
+
     def generate_quiz_from_pdf(self, file_path: str) -> str:
         """Complete flow: upload PDF → run assistant → get quiz response."""
         prompt = "Generate 3 multiple-choice quiz questions based on the content in this PDF."
