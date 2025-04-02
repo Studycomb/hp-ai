@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import Mock, patch
 import os
 import sys
+from openai.types.beta import Assistant, AssistantTool
 from openai.types.chat import ChatCompletion
 from openai.types.chat.chat_completion import Choice, ChatCompletionMessage
 
@@ -25,12 +26,22 @@ class TestOpenAIClient:
         mock_choice = Choice(finish_reason="stop", index=0, message=mock_message)
         return Mock(choices=[mock_choice])
 
+    @pytest.fixture
+    def mock_assistant(self):
+        """Create a mock assistant object."""
+        assistant_tool = AssistantTool(id="file_search", enabled=True)
+        return Assistant(id="fake-assistant-id", created_at=1698984975, model="gpt-4o-mini", tools=[assistant_tool])
+
+    @patch.dict(os.environ, {"OPENAI_API_KEY": "fake-api-key"})
     @patch("openai.OpenAI")
-    def test_generate_text(self, mock_openai_class, client, mock_completion_response):
+    def test_generate_text(self, mock_openai_class, mock_completion_response, mock_assistant):
         """Test the generate_text method."""
         # Configure the mock
         mock_openai_instance = mock_openai_class.return_value
         mock_openai_instance.chat.completions.create.return_value = mock_completion_response
+        mock_openai_instance.beta.assistants.create.return_value = mock_assistant
+
+        client = OpenAIClient()
 
         # Call the method
         result = client.generate_text("Test prompt")
