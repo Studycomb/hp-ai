@@ -32,6 +32,14 @@ class OpenAIClient:
             purpose="assistants"
         )
         return uploaded_file.id
+    
+    def _create_vector_store_with_file(self, file_id: str):
+        """Create a vector store and attach the uploaded file."""
+        vector_store = self.client.vector_stores.create(
+            name="Quiz PDF Vector Store",
+            file_ids=[file_id]
+        )
+        return vector_store.id
 
     def _wait_for_run(self, thread_id: str, run_id: str):
         """Poll the run status until completion."""
@@ -47,17 +55,24 @@ class OpenAIClient:
             time.sleep(1)
     
     def generate_quiz_from_pdf(self, file_path: str) -> str:
-        """Full pipeline: upload PDF → run assistant → return quiz text."""
-        message = "Please generate 3 multiple-choice quiz questions based on this PDF."
-        file_id = self._upload_file(file_path)
+        """Complete flow: upload PDF → run assistant → get quiz response."""
+        prompt = "Generate 3 multiple-choice quiz questions based on the content in this PDF."
 
-        thread = self.client.beta.threads.create()
+        file_id = self._upload_file(file_path)
+        vector_store_id = self._create_vector_store_with_file(file_id)
+
+        thread = self.client.beta.threads.create(
+            tool_resources={
+                "file_search": {
+                    "vector_store_ids": [vector_store_id]
+                }
+            }
+        )
 
         self.client.beta.threads.messages.create(
             thread_id=thread.id,
             role="user",
-            content=message,
-            file_ids=[file_id]
+            content=prompt
         )
 
         run = self.client.beta.threads.runs.create(
@@ -68,12 +83,12 @@ class OpenAIClient:
         self._wait_for_run(thread.id, run.id)
 
         messages = self.client.beta.threads.messages.list(thread_id=thread.id)
+
         for msg in messages.data[::-1]:  # Newest first
             if msg.role == "assistant":
                 return msg.content[0].text.value
-        
-        return "No response from assistant."
 
+        return "No response from assistant."
 
     def generate_text(self, prompt, max_tokens=None, temperature=None):
         """
