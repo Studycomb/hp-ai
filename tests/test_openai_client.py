@@ -1,85 +1,78 @@
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 import os
 import sys
-from openai.types.beta import Assistant, AssistantTool
-from openai.types.chat import ChatCompletion
-from openai.types.chat.chat_completion import Choice, ChatCompletionMessage
+import openai_responses
+from openai_responses import OpenAIMock
+
+from openai.types.beta import Assistant
+from openai import NotFoundError
 
 # Add the src directory to the path so we can import the module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.api.openai_client import OpenAIClient
 
-class TestOpenAIClient:
+@openai_responses.mock()
+@patch.dict(os.environ, {"OPENAI_API_KEY": ""})
+def test_missing_api_key():
+    """Test that an error is raised when API key is missing."""
+    with pytest.raises(ValueError, match="OpenAI API key is required"):
+        OpenAIClient()
 
-    @pytest.fixture
-    def client(self):
-        """Create a client instance for testing with a fake API key."""
-        with patch.dict(os.environ, {"OPENAI_API_KEY": "fake-api-key"}):
-            return OpenAIClient()
+@openai_responses.mock()
+def test_create_client():
+    """Test that the OpenAIClient is created correctly."""
+    client = OpenAIClient(api_key="test_api_key", model="gpt-4o-mini")
 
-    @pytest.fixture
-    def mock_completion_response(self):
-        """Create a mock response for chat completions."""
-        mock_message = ChatCompletionMessage(role="assistant", content="This is a test response")
-        mock_choice = Choice(finish_reason="stop", index=0, message=mock_message)
-        return Mock(choices=[mock_choice])
+    assert client.api_key == "test_api_key"
+    assert client.model == "gpt-4o-mini"
+    assert isinstance(client.assistant, Assistant)
+    assert client.assistant.name == "Quiz Generator"
 
-    @pytest.fixture
-    def mock_assistant(self):
-        """Create a mock assistant object."""
-        assistant_tool = AssistantTool(id="file_search", enabled=True)
-        return Assistant(id="fake-assistant-id", created_at=1698984975, model="gpt-4o-mini", tools=[assistant_tool])
+@openai_responses.mock()
+def test_upload_file():
+    """Test that the file upload works correctly."""
+    client = OpenAIClient(api_key="test_api_key", model="gpt-4o-mini")
 
-    @patch.dict(os.environ, {"OPENAI_API_KEY": "fake-api-key"})
-    @patch("openai.OpenAI")
-    def test_generate_text(self, mock_openai_class, mock_completion_response, mock_assistant):
-        """Test the generate_text method."""
-        # Configure the mock
-        mock_openai_instance = mock_openai_class.return_value
-        mock_openai_instance.chat.completions.create.return_value = mock_completion_response
-        mock_openai_instance.beta.assistants.create.return_value = mock_assistant
+    with pytest.raises(FileNotFoundError):
+        client._upload_file("non_existent_file.pdf")
 
-        client = OpenAIClient()
+    # Dummy file creation for testing
+    test_file_name = "test_file.pdf"
+    with open(test_file_name, "w") as f:
+        f.write("Dummy content")
+    file_id = client._upload_file(test_file_name)
+    assert isinstance(file_id, str)
+    assert len(file_id) > 0
 
-        # Call the method
-        result = client.generate_text("Test prompt")
+@openai_responses.mock()
+def test_create_vector_store_with_file():
+    """Test that the vector store creation works correctly."""
+    client = OpenAIClient(api_key="test_api_key", model="gpt-4o-mini")
 
-        # Assert the result
-        assert result == "This is a test response"
+    # Empty file ID test
+    with pytest.raises(NotFoundError):
+        client._create_vector_store_with_file("")
 
-        # Verify the API was called with correct parameters
-        mock_openai_instance.chat.completions.create.assert_called_once_with(
-            model=client.model,
-            messages=[{"role": "user", "content": "Test prompt"}],
-            max_tokens=1000,
-            temperature=0.7
-        )
+    # Dummy file creation for testing
+    test_file_name = "test_file.pdf"
+    with open(test_file_name, "w") as f:
+        f.write("Dummy content")
+    file_id = client._upload_file(test_file_name)
 
-    @patch("openai.OpenAI")
-    def test_generate_text_with_custom_params(self, mock_openai_class, client, mock_completion_response):
-        """Test generate_text with custom max_tokens and temperature."""
-        # Configure the mock
-        mock_openai_instance = mock_openai_class.return_value
-        mock_openai_instance.chat.completions.create.return_value = mock_completion_response
+    vector_store_id = client._create_vector_store_with_file(file_id)
+    assert isinstance(vector_store_id, str)
+    assert len(vector_store_id) > 0
 
-        # Call the method with custom parameters
-        result = client.generate_text("Test prompt", max_tokens=500, temperature=0.5)
+    # Clean up the dummy file
+    os.remove(test_file_name)
 
-        # Assert the result
-        assert result == "This is a test response"
+@openai_responses.mock()
+def test_wait_for_run(openai_mock: OpenAIMock):
+    """Test that the run waiting works correctly."""
+    client = OpenAIClient(api_key="test_api_key", model="gpt-4o-mini")
 
-        # Verify the API was called with custom parameters
-        mock_openai_instance.chat.completions.create.assert_called_once_with(
-            model=client.model,
-            messages=[{"role": "user", "content": "Test prompt"}],
-            max_tokens=500,
-            temperature=0.5
-        )
-
-    @patch.dict(os.environ, {"OPENAI_API_KEY": ""})
-    def test_missing_api_key(self):
-        """Test that an error is raised when API key is missing."""
-        with pytest.raises(ValueError, match="OpenAI API key is required"):
-            OpenAIClient()
+    # Empty thread ID and run ID test
+    with pytest.raises(ValueError):
+        client._wait_for_run("", "")
