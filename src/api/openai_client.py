@@ -25,7 +25,19 @@ class OpenAIClient:
         )
         return assistant
 
-    def _upload_file(self, file_path: str) -> str:
+    def get_files_open_ai(self):
+        file_dict = {}
+        files = self.client.files.list()
+
+        for file in files["data"]:
+            file_dict[file["id"]] = file["filename"]
+
+        return file_dict
+    
+    def get_all_files(self):
+        local_files = os.listdir("res")
+    
+    def upload_file(self, file_path: str) -> str:
         """Upload a PDF file and return the file ID."""
         uploaded_file = self.client.files.create(
             file=open(file_path, "rb"),
@@ -33,15 +45,40 @@ class OpenAIClient:
         )
         return uploaded_file.id
 
-    def _create_vector_store_with_file(self, file_id: str):
+    def create_vector_store_batch(self, file_id_list: list):
         """Create a vector store and attach the uploaded file."""
         vector_store = self.client.vector_stores.create(
             name="Quiz PDF Vector Store",
-            file_ids=[file_id]
+            file_ids=file_id_list
         )
         return vector_store.id
+    
+    def create_thread(self, vector_store_id: str):
+        thread = self.client.beta.threads.create(
+            tool_resources={
+                "file_search": {
+                    "vector_store_ids": [vector_store_id]
+                }
+            }
+        )
+        return thread.id
+    
+    def create_message(self, thread_id: str, prompt: str):
+        self.client.beta.threads.messages.create(
+            thread_id=thread_id,
+            role="user",
+            content=prompt
+        )
 
-    def _wait_for_run(self, thread_id: str, run_id: str):
+    def run_thread(self, thread_id: str):
+        run = self.client.beta.threads.runs.create(
+            thread_id=thread_id,
+            assistant_id=self.assistant.id
+        )
+        return run.id
+
+
+    def wait_for_run(self, thread_id: str, run_id: str):
         """Poll the run status until completion."""
         while True:
             run_status = self.client.beta.threads.runs.retrieve(
@@ -53,6 +90,15 @@ class OpenAIClient:
             elif run_status.status in ["failed", "expired", "cancelled"]:
                 raise Exception(f"Run failed with status: {run_status.status}")
             time.sleep(1)
+
+    def get_thread_response(self, thread_id: str):
+        messages = self.client.beta.threads.messages.list(thread_id=thread_id)
+
+        for msg in messages.data[::-1]:  # Newest first
+            if msg.role == "assistant":
+                return msg.content[0].text.value
+
+        return "No response from assistant."
 
     def generate_quiz_from_pdf(self, file_path: str) -> str:
         """Complete flow: upload PDF → run assistant → get quiz response."""
