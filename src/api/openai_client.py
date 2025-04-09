@@ -25,17 +25,23 @@ class OpenAIClient:
         )
         return assistant
 
-    def get_files_open_ai(self):
+    def _get_files_open_ai(self):
         file_dict = {}
         files = self.client.files.list()
-
-        for file in files["data"]:
-            file_dict[file["id"]] = file["filename"]
+        for file in files.data:
+            file_dict[file.filename] = file.id
 
         return file_dict
     
     def get_all_files(self):
         local_files = os.listdir("res")
+        files = self._get_files_open_ai()
+
+        for file in local_files:
+            if file not in files:
+                files[file] = ""
+        return files
+
     
     def upload_file(self, file_path: str) -> str:
         """Upload a PDF file and return the file ID."""
@@ -93,42 +99,6 @@ class OpenAIClient:
 
     def get_thread_response(self, thread_id: str):
         messages = self.client.beta.threads.messages.list(thread_id=thread_id)
-
-        for msg in messages.data[::-1]:  # Newest first
-            if msg.role == "assistant":
-                return msg.content[0].text.value
-
-        return "No response from assistant."
-
-    def generate_quiz_from_pdf(self, file_path: str) -> str:
-        """Complete flow: upload PDF → run assistant → get quiz response."""
-        prompt = "Generate 3 multiple-choice quiz questions based on the content in this PDF."
-
-        file_id = self._upload_file(file_path)
-        vector_store_id = self._create_vector_store_with_file(file_id)
-
-        thread = self.client.beta.threads.create(
-            tool_resources={
-                "file_search": {
-                    "vector_store_ids": [vector_store_id]
-                }
-            }
-        )
-
-        self.client.beta.threads.messages.create(
-            thread_id=thread.id,
-            role="user",
-            content=prompt
-        )
-
-        run = self.client.beta.threads.runs.create(
-            thread_id=thread.id,
-            assistant_id=self.assistant.id
-        )
-
-        self._wait_for_run(thread.id, run.id)
-
-        messages = self.client.beta.threads.messages.list(thread_id=thread.id)
 
         for msg in messages.data[::-1]:  # Newest first
             if msg.role == "assistant":

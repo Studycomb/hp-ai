@@ -5,5 +5,9 @@ from src.api.openai_client import OpenAIClient
 client = OpenAIClient()
 
 # Generate text
-response = client.generate_quiz_from_pdf("res/old_exams/provpass-3-verb-utan-elf.pdf")
+#response = client.generate_quiz_from_pdf("res/old_exams/provpass-3-verb-utan-elf.pdf")
+#print(response)
+
+response = client.test_quiz_generation()
+
 print(response)
