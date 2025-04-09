@@ -53,11 +53,13 @@ class OpenAIClient:
 
     def create_vector_store_batch(self, file_id_list: list):
         """Create a vector store and attach the uploaded file."""
-        vector_store = self.client.vector_stores.create(
-            name="Quiz PDF Vector Store",
-            file_ids=file_id_list
-        )
-        return vector_store.id
+        if len(file_id_list) > 0:
+            vector_store = self.client.vector_stores.create(
+                name="Quiz PDF Vector Store",
+                file_ids=file_id_list
+            )
+            return vector_store.id
+        raise AssertionError("Empty file_id list")
     
     def create_thread(self, vector_store_id: str):
         thread = self.client.beta.threads.create(

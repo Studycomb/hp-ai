@@ -36,32 +36,32 @@ def test_upload_file():
     client = OpenAIClient(api_key="test_api_key", model="gpt-4o-mini")
 
     with pytest.raises(FileNotFoundError):
-        client._upload_file("non_existent_file.pdf")
+        client.upload_file("non_existent_file.pdf")
 
     # Dummy file creation for testing
     test_file_name = "test_file.pdf"
     with open(test_file_name, "w") as f:
         f.write("Dummy content")
-    file_id = client._upload_file(test_file_name)
+    file_id = client.upload_file(test_file_name)
     assert isinstance(file_id, str)
     assert len(file_id) > 0
 
 @openai_responses.mock()
-def test_create_vector_store_with_file():
+def test_create_vector_store_batch():
     """Test that the vector store creation works correctly."""
     client = OpenAIClient(api_key="test_api_key", model="gpt-4o-mini")
 
     # Empty file ID test
-    with pytest.raises(NotFoundError):
-        client._create_vector_store_with_file("")
+    with pytest.raises(AssertionError):
+        client.create_vector_store_batch([])
 
     # Dummy file creation for testing
     test_file_name = "test_file.pdf"
     with open(test_file_name, "w") as f:
         f.write("Dummy content")
-    file_id = client._upload_file(test_file_name)
+    file_id = [client.upload_file(test_file_name)]
 
-    vector_store_id = client._create_vector_store_with_file(file_id)
+    vector_store_id = client.create_vector_store_batch(file_id)
     assert isinstance(vector_store_id, str)
     assert len(vector_store_id) > 0
 
@@ -75,4 +75,4 @@ def test_wait_for_run(openai_mock: OpenAIMock):
 
     # Empty thread ID and run ID test
     with pytest.raises(ValueError):
-        client._wait_for_run("", "")
+        client.wait_for_run("", "")
