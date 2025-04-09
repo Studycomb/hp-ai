@@ -25,7 +25,25 @@ class OpenAIClient:
         )
         return assistant
 
-    def _upload_file(self, file_path: str) -> str:
+    def _get_files_open_ai(self):
+        file_dict = {}
+        files = self.client.files.list()
+        for file in files.data:
+            file_dict[file.filename] = file.id
+
+        return file_dict
+    
+    def get_all_files(self):
+        local_files = os.listdir("res")
+        files = self._get_files_open_ai()
+
+        for file in local_files:
+            if file not in files:
+                files[file] = ""
+        return files
+
+    
+    def upload_file(self, file_path: str) -> str:
         """Upload a PDF file and return the file ID."""
         uploaded_file = self.client.files.create(
             file=open(file_path, "rb"),
@@ -33,15 +51,42 @@ class OpenAIClient:
         )
         return uploaded_file.id
 
-    def _create_vector_store_with_file(self, file_id: str):
+    def create_vector_store_batch(self, file_id_list: list):
         """Create a vector store and attach the uploaded file."""
-        vector_store = self.client.vector_stores.create(
-            name="Quiz PDF Vector Store",
-            file_ids=[file_id]
+        if len(file_id_list) > 0:
+            vector_store = self.client.vector_stores.create(
+                name="Quiz PDF Vector Store",
+                file_ids=file_id_list
+            )
+            return vector_store.id
+        raise AssertionError("Empty file_id list")
+    
+    def create_thread(self, vector_store_id: str):
+        thread = self.client.beta.threads.create(
+            tool_resources={
+                "file_search": {
+                    "vector_store_ids": [vector_store_id]
+                }
+            }
         )
-        return vector_store.id
+        return thread.id
+    
+    def create_message(self, thread_id: str, prompt: str):
+        self.client.beta.threads.messages.create(
+            thread_id=thread_id,
+            role="user",
+            content=prompt
+        )
 
-    def _wait_for_run(self, thread_id: str, run_id: str):
+    def run_thread(self, thread_id: str):
+        run = self.client.beta.threads.runs.create(
+            thread_id=thread_id,
+            assistant_id=self.assistant.id
+        )
+        return run.id
+
+
+    def wait_for_run(self, thread_id: str, run_id: str):
         """Poll the run status until completion."""
         while True:
             run_status = self.client.beta.threads.runs.retrieve(
@@ -54,35 +99,8 @@ class OpenAIClient:
                 raise Exception(f"Run failed with status: {run_status.status}")
             time.sleep(1)
 
-    def generate_quiz_from_pdf(self, file_path: str) -> str:
-        """Complete flow: upload PDF → run assistant → get quiz response."""
-        prompt = "Generate 3 multiple-choice quiz questions based on the content in this PDF."
-
-        file_id = self._upload_file(file_path)
-        vector_store_id = self._create_vector_store_with_file(file_id)
-
-        thread = self.client.beta.threads.create(
-            tool_resources={
-                "file_search": {
-                    "vector_store_ids": [vector_store_id]
-                }
-            }
-        )
-
-        self.client.beta.threads.messages.create(
-            thread_id=thread.id,
-            role="user",
-            content=prompt
-        )
-
-        run = self.client.beta.threads.runs.create(
-            thread_id=thread.id,
-            assistant_id=self.assistant.id
-        )
-
-        self._wait_for_run(thread.id, run.id)
-
-        messages = self.client.beta.threads.messages.list(thread_id=thread.id)
+    def get_thread_response(self, thread_id: str):
+        messages = self.client.beta.threads.messages.list(thread_id=thread_id)
 
         for msg in messages.data[::-1]:  # Newest first
             if msg.role == "assistant":
