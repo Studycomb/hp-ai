@@ -32,7 +32,7 @@ class OpenAIClient:
             file_dict[file.filename] = file.id
 
         return file_dict
-    
+
     def get_all_files(self):
         local_files = os.listdir("res")
         files = self._get_files_open_ai()
@@ -42,7 +42,7 @@ class OpenAIClient:
                 files[file] = ""
         return files
 
-    
+
     def upload_file(self, file_path: str) -> str:
         """Upload a PDF file and return the file ID."""
         uploaded_file = self.client.files.create(
@@ -60,7 +60,7 @@ class OpenAIClient:
             )
             return vector_store.id
         raise AssertionError("Empty file_id list")
-    
+
     def create_thread(self, vector_store_id: str):
         thread = self.client.beta.threads.create(
             tool_resources={
@@ -70,7 +70,7 @@ class OpenAIClient:
             }
         )
         return thread.id
-    
+
     def create_message(self, thread_id: str, prompt: str):
         self.client.beta.threads.messages.create(
             thread_id=thread_id,
