@@ -15,6 +15,7 @@ class OpenAIClient:
         self.model = model or os.getenv("MODEL_NAME", "gpt-4o-mini")
         self.client = OpenAI(api_key=self.api_key)
         self.assistant = self._create_assistant()
+        self.file_id_list = []
 
     def _create_assistant(self):
         assistant = self.client.beta.assistants.create(
@@ -25,38 +26,32 @@ class OpenAIClient:
         )
         return assistant
 
-    def _get_files_open_ai(self):
-        file_dict = {}
+    def add_file(self, path: str):
+        """Add a file to the client. If the file doesn't exist, upload it."""
+        file_id = self.get_file_id(os.path.basename(path))
+        if file_id is None:
+            # If the file doesn't exist, upload it
+            file_id = self.client.files.create(
+                file=open(path, "rb"),
+                purpose="user_data",
+            ).id
+        self.file_id_list.append(file_id)
+
+    def get_file_id(self, filename: str):
+        """Get the file ID for a given filename."""
         files = self.client.files.list()
-        for file in files.data:
-            file_dict[file.filename] = file.id
+        res = None
+        for data in files.data:
+            if data.filename == filename:
+                return data.id
+        return res
 
-        return file_dict
-
-    def get_all_files(self):
-        local_files = os.listdir("res")
-        files = self._get_files_open_ai()
-
-        for file in local_files:
-            if file not in files:
-                files[file] = ""
-        return files
-
-
-    def upload_file(self, file_path: str) -> str:
-        """Upload a PDF file and return the file ID."""
-        uploaded_file = self.client.files.create(
-            file=open(file_path, "rb"),
-            purpose="assistants"
-        )
-        return uploaded_file.id
-
-    def create_vector_store_batch(self, file_id_list: list):
+    def create_vector_store_batch(self):
         """Create a vector store and attach the uploaded file."""
-        if len(file_id_list) > 0:
+        if self.file_id_list:
             vector_store = self.client.vector_stores.create(
                 name="Quiz PDF Vector Store",
-                file_ids=file_id_list
+                file_ids=self.file_id_list,
             )
             return vector_store.id
         raise AssertionError("Empty file_id list")
@@ -130,6 +125,36 @@ class OpenAIClient:
             ],
             max_tokens=max_tokens,
             temperature=temperature
+        )
+
+        return response.choices[0].message.content
+
+    def generate_new(self, prompt):
+        user_messages = {
+            "role": "user",
+            "content": [],
+            }
+
+        for file_id in self.file_id_list:
+            user_messages["content"].append({
+                "type": "file",
+                "file": {
+                    "file_id": file_id
+                }
+            })
+
+        user_messages["content"].append({
+            "type": "text",
+            "text": prompt
+        })
+
+        messages = [user_messages]
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            max_tokens=int(os.getenv("MAX_TOKENS", 1000)),
+            temperature=float(os.getenv("TEMPERATURE", 0.7))
         )
 
         return response.choices[0].message.content
