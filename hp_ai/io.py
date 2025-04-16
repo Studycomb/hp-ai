@@ -21,7 +21,12 @@ class DocumentManager:
         self.doc_folder = doc_folder
 
     def get_documents(self):
-        return os.listdir(self.doc_folder)
+        documents = []
+        for filename in os.listdir(self.doc_folder):
+            file_path = os.path.join(self.doc_folder, filename)
+            if os.path.isfile(file_path):
+                documents.append(filename)
+        return documents
 
     def get_document_path(self, filename):
         return os.path.join(self.doc_folder, filename)
