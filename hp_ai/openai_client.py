@@ -65,6 +65,10 @@ class OpenAIClient:
         Returns:
             str: The generated response from the OpenAI API
         """
+
+        if not prompt:
+            raise ValueError("Prompt cannot be empty")
+
         user_messages = {
             "role": "user",
             "content": [],
