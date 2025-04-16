@@ -1,56 +1,37 @@
-import questionary
-import argparse
-import os
-import tomllib
+from . import api
+from . import cli
+from . import io
 
-from openai_client import OpenAIClient
+def main():
+    # Initialize components
+    cli_handler = cli.CLIHandler()
+    document_manager = io.DocumentManager(cli_handler.get_document_folder())
+    prompt_manager = io.PromptManager(cli_handler.get_prompt_file())
 
-parser = argparse.ArgumentParser(description="HP-AI - A tool for generating quiz questions using OpenAI")
-parser.add_argument("--pdf-folder", help="Path to folder containing PDF files", default="./pdfs", type=str)
-parser.add_argument("--prompt-file", help="Path to file with prompts", default="./prompts.toml", type=str)
-args = parser.parse_args()
+    # Get available PDF files and prompts
+    documents = document_manager.get_documents()
 
-if not os.path.exists(args.pdf_folder):
-    print(f"PDF folder \"{args.pdf_folder}\" does not exist")
-    exit(1)
-if not os.path.exists(args.prompt_file):
-    print(f"Prompt file \"{args.prompt_file}\" does not exist")
-    exit(1)
+    # Get user selections
+    selected_documents = cli_handler.select_documents(documents)
+    selected_prompt_name = cli_handler.select_prompt(prompt_manager.get_prompt_names())
+    selected_prompt = prompt_manager.get_prompt(selected_prompt_name)
 
-pdf_files = os.listdir(args.pdf_folder)
-pdf_files = [f for f in pdf_files if f.endswith(".pdf")]
+    # Display selections and confirm
+    print(f"Selected documents: {selected_documents}")
+    print(f"Selected prompt: {selected_prompt}")
 
-prompts = []
-with open(args.prompt_file, "rb") as prompt_file:
-    prompts = tomllib.load(prompt_file)
+    if cli_handler.confirm_continue():
+        # Process files with OpenAI
+        client = api.OpenAIClient()
+        for filename in selected_documents:
+            client.add_file(document_manager.get_document_path(filename))
 
-selected_files = questionary.checkbox(
-    "Select PDF files to process",
-    choices=pdf_files,
-).ask()
+        # Generate and display result
+        result = client.generate(selected_prompt)
+        print(result)
 
-if selected_files == None: # KeyboardInterrupt
-    exit(1)
-
-selected_prompt = questionary.select(
-    f"Select a prompt to use, prompt are defined in \"{args.prompt_file}\"",
-    choices=prompts,
-).ask()
-
-if selected_prompt == None: # KeyboardInterrupt
-    exit(1)
-
-print(f"Selected files: {selected_files}")
-print(f"Selected prompt: {prompts[selected_prompt]}")
-
-if not questionary.confirm(
-    "Do you want to continue?",
-).ask():
-    print("Aborting...")
-    exit(0)
-
-client = OpenAIClient()
-for f in selected_files:
-    client.add_file(os.path.join(args.pdf_folder, f))
-result = client.generate(prompts[selected_prompt])
-print(result)
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nProcess interrupted by user.")
