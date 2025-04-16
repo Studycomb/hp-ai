@@ -39,5 +39,5 @@ if not questionary.confirm(
 client = OpenAIClient()
 for f in selected_files:
     client.add_file(os.path.join(args.pdf_folder, f))
-result = client.generate_new(prompts[selected_prompt])
+result = client.generate(prompts[selected_prompt])
 print(result)
