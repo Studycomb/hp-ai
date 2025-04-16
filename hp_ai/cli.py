@@ -14,12 +14,11 @@ class CLIHandler:
         return parser.parse_args()
 
     def _validate_arguments(self):
-        if not os.path.exists(self.args.doc_folder):
-            print(f"Document \"{self.args.doc_folder}\" does not exist")
-            exit(1)
-        if not os.path.exists(self.args.prompt_file):
-            print(f"Prompt file \"{self.args.prompt_file}\" does not exist")
-            exit(1)
+        if not (os.path.exists(self.args.doc_folder) and os.path.isdir(self.args.doc_folder)):
+            raise FileNotFoundError(f"Document folder \"{self.args.doc_folder}\" does not exist or is a file")
+        if not (os.path.exists(self.args.prompt_file) and os.path.isfile(self.args.prompt_file)):
+            raise FileNotFoundError(f"Prompt file \"{self.args.prompt_file}\" does not exist or is a directory")
+
 
     def get_document_folder(self):
         return self.args.doc_folder
