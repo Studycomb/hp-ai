@@ -32,10 +32,11 @@ class OpenAIClient:
         file_id = self.get_file_id(os.path.basename(path))
         if file_id is None:
             # If the file doesn't exist, upload it
-            file_id = self.client.files.create(
-                file=open(path, "rb"),
-                purpose="user_data",
-            ).id
+            with open(path, "rb") as file:
+                file_id = self.client.files.create(
+                    file=file,
+                    purpose="user_data",
+                ).id
         self.file_id_list.append(file_id)
 
     def get_file_id(self, filename: str):
