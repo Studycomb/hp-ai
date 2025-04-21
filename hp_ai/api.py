@@ -1,6 +1,6 @@
 import os
 from openai import OpenAI
-import time
+import requests
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -147,3 +147,32 @@ class OpenAIClient:
         )
 
         return response.choices[0].message.function_call.arguments
+
+
+class QuizAPIClient:
+    def __init__(self):
+        self.api_route = os.getenv("QUIZ_ROUTE")
+        self.auth_token = os.getenv("AUTH_TOKEN")
+        if not self.api_route or not self.auth_token:
+            raise ValueError("API route and auth token are required")
+        
+    def create_quiz(self, quiz_data):
+        """
+        Create a quiz using the provided quiz data.
+        Args:
+            quiz_data (dict): The quiz data to create
+        """
+        response = requests.post(
+            self.api_route,
+            json=quiz_data,
+            headers={
+            "Authorization": f"Bearer {self.auth_token}",
+            "Content-Type": "application/json",
+            },
+        )
+        if response.status_code != 200:
+            raise Exception(f"API call failed with status code {response.status_code}")
+
+        print("Status Code:", response.status_code)
+        print("Response:", response.json())
+
