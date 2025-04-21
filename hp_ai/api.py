@@ -70,6 +70,9 @@ class OpenAIClient:
         if not prompt:
             raise ValueError("Prompt cannot be empty")
 
+        if "json" not in prompt.lower():
+            prompt += " Please return the response in valid JSON format using the create_quiz function."
+
         user_messages = {
             "role": "user",
             "content": [],
@@ -88,13 +91,59 @@ class OpenAIClient:
             "text": prompt
         })
 
-        messages = [user_messages]
+        messages = [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant that creates quizzes in JSON format."
+            },
+            user_messages
+        ]
+
+        functions = [
+            {
+                "name": "create_quiz",
+                "description": "Creates a multiple-choice quiz",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "category": {"type": "string"},
+                        "questions": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "question": {"type": "string"},
+                                    "image": {"type": ["string", "null"]},
+                                    "alternatives": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "option_text": {"type": "string"},
+                                                "is_correct": {"type": "boolean"}
+                                            },
+                                            "required": ["option_text", "is_correct"]
+                                        }
+                                    }
+                                },
+                                "required": ["question", "image", "alternatives"]
+                            }
+                        }
+                    },
+                    "required": ["title", "category", "questions"]
+                }
+            }
+        ]
 
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
+            response_format={"type": "json_object"},
+            functions=functions,
+            function_call={"name": "create_quiz"},
             max_tokens=int(os.getenv("MAX_TOKENS", 1000)),
             temperature=float(os.getenv("TEMPERATURE", 0.7))
         )
 
-        return response.choices[0].message.content
+        return response.choices[0].message.function_call.arguments
