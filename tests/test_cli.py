@@ -1,21 +1,20 @@
 import os
-import sys
 import pytest
 from unittest import mock
 import argparse
 import tempfile
 
-# Add the parent directory to path so we can import the module
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 from hp_ai.cli import CLIHandler
 
+
 class TestCLIHandler:
-    @mock.patch('argparse.ArgumentParser.parse_args')
-    @mock.patch('os.path.exists')
-    @mock.patch('os.path.isfile')
-    @mock.patch('os.path.isdir')
-    def test_init_with_valid_args(self, mock_isdir, mock_isfile, mock_exists, mock_parse_args):
+    @mock.patch("argparse.ArgumentParser.parse_args")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.path.isfile")
+    @mock.patch("os.path.isdir")
+    def test_init_with_valid_args(
+        self, mock_isdir, mock_isfile, mock_exists, mock_parse_args
+    ) -> None:
         # Set up mocks
         mock_args = mock.Mock()
         mock_args.doc_folder = "/valid/doc/folder"
@@ -37,10 +36,10 @@ class TestCLIHandler:
         mock_exists.assert_any_call("/valid/doc/folder")
         mock_exists.assert_any_call("/valid/prompt_file.toml")
 
-    @mock.patch('argparse.ArgumentParser.parse_args')
-    @mock.patch('os.path.exists')
-    @mock.patch('os.path.isdir')
-    def test_missing_doc_folder(self, mock_isdir, mock_exists, mock_parse_args):
+    @mock.patch("argparse.ArgumentParser.parse_args")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.path.isdir")
+    def test_missing_doc_folder(self, mock_isdir, mock_exists, mock_parse_args) -> None:
         # Set up mocks
         mock_args = mock.Mock()
         mock_args.doc_folder = "/nonexistent/folder"
@@ -52,14 +51,19 @@ class TestCLIHandler:
         mock_isdir.return_value = True
 
         # Initialize handler should raise FileNotFoundError
-        with pytest.raises(FileNotFoundError, match=f"Document folder \"/nonexistent/folder\" does not exist or is a file"):
+        with pytest.raises(
+            FileNotFoundError,
+            match=f'Document folder "{mock_args.doc_folder}" does not exist or is a file',
+        ):
             CLIHandler()
 
-    @mock.patch('argparse.ArgumentParser.parse_args')
-    @mock.patch('os.path.exists')
-    @mock.patch('os.path.isfile')
-    @mock.patch('os.path.isdir')
-    def test_doc_folder_is_file(self, mock_isdir, mock_isfile, mock_exists, mock_parse_args):
+    @mock.patch("argparse.ArgumentParser.parse_args")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.path.isfile")
+    @mock.patch("os.path.isdir")
+    def test_doc_folder_is_file(
+        self, mock_isdir, mock_isfile, mock_exists, mock_parse_args
+    ) -> None:
         # Set up mocks
         mock_args = mock.Mock()
         mock_args.doc_folder = "/path/to/file.txt"
@@ -68,18 +72,26 @@ class TestCLIHandler:
 
         # Make doc folder exist but as a file
         mock_exists.return_value = True
-        mock_isfile.side_effect = lambda path: path == "/path/to/file.txt" or path == "/valid/prompt_file.toml"
+        mock_isfile.side_effect = (
+            lambda path: path == "/path/to/file.txt"
+            or path == "/valid/prompt_file.toml"
+        )
         mock_isdir.side_effect = lambda path: path != "/path/to/file.txt"
 
         # Initialize handler should raise FileNotFoundError with appropriate message
-        with pytest.raises(FileNotFoundError, match=f"Document folder \"/path/to/file.txt\" does not exist or is a file"):
+        with pytest.raises(
+            FileNotFoundError,
+            match=f'Document folder "{mock_args.doc_folder}" does not exist or is a file',
+        ):
             CLIHandler()
 
-    @mock.patch('argparse.ArgumentParser.parse_args')
-    @mock.patch('os.path.exists')
-    @mock.patch('os.path.isfile')
-    @mock.patch('os.path.isdir')
-    def test_missing_prompt_file(self, mock_isdir, mock_isfile, mock_exists, mock_parse_args):
+    @mock.patch("argparse.ArgumentParser.parse_args")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.path.isfile")
+    @mock.patch("os.path.isdir")
+    def test_missing_prompt_file(
+        self, mock_isdir, mock_isfile, mock_exists, mock_parse_args
+    ) -> None:
         # Set up mocks
         mock_args = mock.Mock()
         mock_args.doc_folder = "/valid/doc/folder"
@@ -92,14 +104,19 @@ class TestCLIHandler:
         mock_isfile.return_value = False
 
         # Initialize handler should raise FileNotFoundError
-        with pytest.raises(FileNotFoundError, match=f"Prompt file \"/nonexistent/prompt_file.toml\" does not exist or is a directory"):
+        with pytest.raises(
+            FileNotFoundError,
+            match=f'Prompt file "{mock_args.prompt_file}" does not exist or is a directory',
+        ):
             CLIHandler()
 
-    @mock.patch('argparse.ArgumentParser.parse_args')
-    @mock.patch('os.path.exists')
-    @mock.patch('os.path.isfile')
-    @mock.patch('os.path.isdir')
-    def test_prompt_file_is_directory(self, mock_isdir, mock_isfile, mock_exists, mock_parse_args):
+    @mock.patch("argparse.ArgumentParser.parse_args")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.path.isfile")
+    @mock.patch("os.path.isdir")
+    def test_prompt_file_is_directory(
+        self, mock_isdir, mock_isfile, mock_exists, mock_parse_args
+    ) -> None:
         # Set up mocks
         mock_args = mock.Mock()
         mock_args.doc_folder = "/valid/doc/folder"
@@ -112,14 +129,19 @@ class TestCLIHandler:
         mock_isfile.side_effect = lambda path: False
 
         # Initialize handler should raise FileNotFoundError with appropriate message
-        with pytest.raises(FileNotFoundError, match=f"Prompt file \"/path/to/directory\" does not exist or is a directory"):
+        with pytest.raises(
+            FileNotFoundError,
+            match=f'Prompt file "{mock_args.prompt_file}" does not exist or is a directory',
+        ):
             CLIHandler()
 
-    @mock.patch('argparse.ArgumentParser.parse_args')
-    @mock.patch('os.path.exists')
-    @mock.patch('os.path.isfile')
-    @mock.patch('os.path.isdir')
-    def test_get_document_folder(self, mock_isdir, mock_isfile, mock_exists, mock_parse_args):
+    @mock.patch("argparse.ArgumentParser.parse_args")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.path.isfile")
+    @mock.patch("os.path.isdir")
+    def test_get_document_folder(
+        self, mock_isdir, mock_isfile, mock_exists, mock_parse_args
+    ) -> None:
         # Set up mocks
         mock_args = mock.Mock()
         mock_args.doc_folder = "/test/docs"
@@ -138,11 +160,13 @@ class TestCLIHandler:
         # Verify result
         assert result == "/test/docs"
 
-    @mock.patch('argparse.ArgumentParser.parse_args')
-    @mock.patch('os.path.exists')
-    @mock.patch('os.path.isfile')
-    @mock.patch('os.path.isdir')
-    def test_get_prompt_file(self, mock_isdir, mock_isfile, mock_exists, mock_parse_args):
+    @mock.patch("argparse.ArgumentParser.parse_args")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.path.isfile")
+    @mock.patch("os.path.isdir")
+    def test_get_prompt_file(
+        self, mock_isdir, mock_isfile, mock_exists, mock_parse_args
+    ) -> None:
         # Set up mocks
         mock_args = mock.Mock()
         mock_args.doc_folder = "/test/docs"
@@ -161,12 +185,14 @@ class TestCLIHandler:
         # Verify result
         assert result == "/test/prompts.toml"
 
-    @mock.patch('argparse.ArgumentParser.parse_args')
-    @mock.patch('os.path.exists')
-    @mock.patch('os.path.isfile')
-    @mock.patch('os.path.isdir')
-    @mock.patch('questionary.checkbox')
-    def test_select_documents(self, mock_checkbox, mock_isdir, mock_isfile, mock_exists, mock_parse_args):
+    @mock.patch("argparse.ArgumentParser.parse_args")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.path.isfile")
+    @mock.patch("os.path.isdir")
+    @mock.patch("questionary.checkbox")
+    def test_select_documents(
+        self, mock_checkbox, mock_isdir, mock_isfile, mock_exists, mock_parse_args
+    ) -> None:
         # Set up mocks
         mock_args = mock.Mock()
         mock_args.doc_folder = "/test/docs"
@@ -190,19 +216,20 @@ class TestCLIHandler:
 
         # Verify questionary was called correctly
         mock_checkbox.assert_called_once_with(
-            "Select documents to process",
-            choices=documents
+            "Select documents to process", choices=documents
         )
 
         # Verify result
         assert result == ["doc1.pdf", "doc2.pdf"]
 
-    @mock.patch('argparse.ArgumentParser.parse_args')
-    @mock.patch('os.path.exists')
-    @mock.patch('os.path.isfile')
-    @mock.patch('os.path.isdir')
-    @mock.patch('questionary.select')
-    def test_select_prompt(self, mock_select, mock_isdir, mock_isfile, mock_exists, mock_parse_args):
+    @mock.patch("argparse.ArgumentParser.parse_args")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.path.isfile")
+    @mock.patch("os.path.isdir")
+    @mock.patch("questionary.select")
+    def test_select_prompt(
+        self, mock_select, mock_isdir, mock_isfile, mock_exists, mock_parse_args
+    ) -> None:
         # Set up mocks
         mock_args = mock.Mock()
         mock_args.doc_folder = "/test/docs"
@@ -226,19 +253,21 @@ class TestCLIHandler:
 
         # Verify questionary was called correctly
         mock_select.assert_called_once_with(
-            f"Select a prompt to use, prompt are defined in \"{mock_args.prompt_file}\"",
-            choices=prompts
+            f'Select a prompt to use, prompt are defined in "{mock_args.prompt_file}"',
+            choices=prompts,
         )
 
         # Verify result
         assert result == "selected_prompt"
 
-    @mock.patch('argparse.ArgumentParser.parse_args')
-    @mock.patch('os.path.exists')
-    @mock.patch('os.path.isfile')
-    @mock.patch('os.path.isdir')
-    @mock.patch('questionary.confirm')
-    def test_confirm_continue(self, mock_confirm, mock_isdir, mock_isfile, mock_exists, mock_parse_args):
+    @mock.patch("argparse.ArgumentParser.parse_args")
+    @mock.patch("os.path.exists")
+    @mock.patch("os.path.isfile")
+    @mock.patch("os.path.isdir")
+    @mock.patch("questionary.confirm")
+    def test_confirm_continue(
+        self, mock_confirm, mock_isdir, mock_isfile, mock_exists, mock_parse_args
+    ) -> None:
         # Set up mocks
         mock_args = mock.Mock()
         mock_args.doc_folder = "/test/docs"
@@ -260,14 +289,12 @@ class TestCLIHandler:
         result = cli_handler.confirm_continue()
 
         # Verify questionary was called correctly
-        mock_confirm.assert_called_once_with(
-            "Do you want to continue?"
-        )
+        mock_confirm.assert_called_once_with("Do you want to continue?")
 
         # Verify result
         assert result is True
 
-    def test_integration_with_real_files(self):
+    def test_integration_with_real_files(self) -> None:
         # Create temporary files to test real initialization
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create a dummy prompt file
@@ -277,9 +304,16 @@ class TestCLIHandler:
                 f.write('prompt2 = "Test prompt 2"\n')
 
             # Patch sys.argv to provide command line arguments
-            with mock.patch('sys.argv', ['program_name',
-                                        '--doc-folder', temp_dir,
-                                        '--prompt-file', prompt_file]):
+            with mock.patch(
+                "sys.argv",
+                [
+                    "program_name",
+                    "--doc-folder",
+                    temp_dir,
+                    "--prompt-file",
+                    prompt_file,
+                ],
+            ):
                 # Initialize handler
                 cli_handler = CLIHandler()
 

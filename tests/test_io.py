@@ -1,24 +1,23 @@
 import os
 import pytest
-import sys
 import tempfile
 from unittest import mock
 from tomllib import TOMLDecodeError
 
-# Add the parent directory to path so we can import the module
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 from hp_ai.io import PromptManager, DocumentManager
 
+
 class TestPromptManager:
-    def test_init_and_load_prompts(self):
+    def test_init_and_load_prompts(self) -> None:
         """Test that PromptManager correctly initializes and loads prompts."""
         # Create a temporary TOML file for testing
-        with tempfile.NamedTemporaryFile(suffix='.toml', delete=False, mode='wb') as temp_file:
-            temp_file.write(b'''
+        with tempfile.NamedTemporaryFile(
+            suffix=".toml", delete=False, mode="wb"
+        ) as temp_file:
+            temp_file.write(b"""
 test_prompt = "This is a test prompt"
 another_prompt = "This is another test prompt"
-            ''')
+            """)
             temp_file_path = temp_file.name
 
         try:
@@ -33,46 +32,50 @@ another_prompt = "This is another test prompt"
             # Clean up the temporary file
             os.unlink(temp_file_path)
 
-    def test_get_prompt_names(self):
+    def test_get_prompt_names(self) -> None:
         """Test retrieving prompt names."""
         # Mock _load_prompts to return a predefined dictionary
-        with mock.patch.object(PromptManager, '_load_prompts', return_value={
-            'prompt1': 'Value 1',
-            'prompt2': 'Value 2'
-        }):
+        with mock.patch.object(
+            PromptManager,
+            "_load_prompts",
+            return_value={"prompt1": "Value 1", "prompt2": "Value 2"},
+        ):
             pm = PromptManager("dummy_path.toml")
             names = pm.get_prompt_names()
 
             # Verify prompt names were correctly returned
             assert isinstance(names, list)
-            assert set(names) == {'prompt1', 'prompt2'}
+            assert set(names) == {"prompt1", "prompt2"}
             assert len(names) == 2
 
-    def test_get_prompt(self):
+    def test_get_prompt(self) -> None:
         """Test retrieving specific prompts by name."""
         # Mock _load_prompts to return a predefined dictionary
-        with mock.patch.object(PromptManager, '_load_prompts', return_value={
-            'prompt1': 'Value 1',
-            'prompt2': 'Value 2'
-        }):
+        with mock.patch.object(
+            PromptManager,
+            "_load_prompts",
+            return_value={"prompt1": "Value 1", "prompt2": "Value 2"},
+        ):
             pm = PromptManager("dummy_path.toml")
 
             # Verify individual prompts can be accessed
-            assert pm.get_prompt('prompt1') == 'Value 1'
-            assert pm.get_prompt('prompt2') == 'Value 2'
+            assert pm.get_prompt("prompt1") == "Value 1"
+            assert pm.get_prompt("prompt2") == "Value 2"
 
-    def test_nonexistent_prompt_file(self):
+    def test_nonexistent_prompt_file(self) -> None:
         """Test behavior when the prompt file doesn't exist."""
         with pytest.raises(FileNotFoundError):
             PromptManager("nonexistent_file.toml")
 
-    def test_invalid_toml(self):
+    def test_invalid_toml(self) -> None:
         """Test behavior with invalid TOML content."""
         # Create a file with invalid TOML syntax
-        with tempfile.NamedTemporaryFile(suffix='.toml', delete=False, mode='wb') as temp_file:
-            temp_file.write(b'''
+        with tempfile.NamedTemporaryFile(
+            suffix=".toml", delete=False, mode="wb"
+        ) as temp_file:
+            temp_file.write(b"""
 invalid_toml = "unclosed string
-            ''')
+            """)
             temp_file_path = temp_file.name
 
         try:
@@ -85,12 +88,12 @@ invalid_toml = "unclosed string
 
 
 class TestDocumentManager:
-    def test_init(self):
+    def test_init(self) -> None:
         """Test DocumentManager initialization."""
         dm = DocumentManager("/test/path")
         assert dm.doc_folder == "/test/path"
 
-    def test_get_documents(self):
+    def test_get_documents(self) -> None:
         """Test getting list of documents from a folder."""
         # Create a temporary directory with test files
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -109,7 +112,7 @@ class TestDocumentManager:
             assert set(documents) == {"file1.pdf", "file2.pdf"}
             assert len(documents) == 2
 
-    def test_get_document_path(self):
+    def test_get_document_path(self) -> None:
         """Test getting the full path for a document."""
         dm = DocumentManager("/test/path")
 
@@ -121,7 +124,7 @@ class TestDocumentManager:
         path = dm.get_document_path("subfolder/document.pdf")
         assert path == os.path.join("/test/path", "subfolder/document.pdf")
 
-    def test_empty_folder(self):
+    def test_empty_folder(self) -> None:
         """Test behavior with an empty folder."""
         with tempfile.TemporaryDirectory() as temp_dir:
             dm = DocumentManager(temp_dir)
@@ -131,7 +134,7 @@ class TestDocumentManager:
             assert isinstance(documents, list)
             assert documents == []
 
-    def test_nonexistent_folder(self):
+    def test_nonexistent_folder(self) -> None:
         """Test getting documents from a non-existent folder."""
         # Using a path that's unlikely to exist
         dm = DocumentManager("/path/that/does/not/exist/123456789")
