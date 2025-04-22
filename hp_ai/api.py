@@ -1,6 +1,6 @@
 import os
 from openai import OpenAI
-import time
+import requests
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -70,6 +70,9 @@ class OpenAIClient:
         if not prompt:
             raise ValueError("Prompt cannot be empty")
 
+        if "json" not in prompt.lower():
+            prompt += "  Returnera svaret i giltigt JSON-format med hjälp av funktionen create_quiz. Kategorin ska vara 'ORD'."
+
         user_messages = {
             "role": "user",
             "content": [],
@@ -88,13 +91,88 @@ class OpenAIClient:
             "text": prompt
         })
 
-        messages = [user_messages]
+        messages = [
+            {
+                "role": "system",
+                "content": "Du är en hjälpsam assistent som skapar quiz i JSON-format."
+            },
+            user_messages
+        ]
+
+        functions = [
+            {
+                "name": "create_quiz",
+                "description": "Skapa ett flervalsquiz.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "category": {"type": "string"},
+                        "questions": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "question": {"type": "string"},
+                                    "image": {"type": ["string", "null"]},
+                                    "alternatives": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "option_text": {"type": "string"},
+                                                "is_correct": {"type": "boolean"}
+                                            },
+                                            "required": ["option_text", "is_correct"]
+                                        }
+                                    }
+                                },
+                                "required": ["question", "image", "alternatives"]
+                            }
+                        }
+                    },
+                    "required": ["title", "category", "questions"]
+                }
+            }
+        ]
 
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
+            response_format={"type": "json_object"},
+            functions=functions,
+            function_call={"name": "create_quiz"},
             max_tokens=int(os.getenv("MAX_TOKENS", 1000)),
             temperature=float(os.getenv("TEMPERATURE", 0.7))
         )
 
-        return response.choices[0].message.content
+        return response.choices[0].message.function_call.arguments
+
+
+class QuizAPIClient:
+    def __init__(self):
+        self.api_route = os.getenv("QUIZ_ROUTE")
+        self.auth_token = os.getenv("AUTH_TOKEN")
+        if not self.api_route or not self.auth_token:
+            raise ValueError("API route and auth token are required")
+
+    def create_quiz(self, quiz_data):
+        """
+        Create a quiz using the provided quiz data.
+        Args:
+            quiz_data (dict): The quiz data to create
+        """
+        response = requests.post(
+            self.api_route,
+            json=quiz_data,
+            headers={
+            "Authorization": f"Bearer {self.auth_token}",
+            "Content-Type": "application/json",
+            },
+        )
+        if response.status_code != 200:
+            raise Exception(f"API call failed with status code {response.status_code}")
+
+        print("Status Code:", response.status_code)
+        print("Response:", response.json())
+
