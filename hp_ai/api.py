@@ -71,7 +71,7 @@ class OpenAIClient:
             raise ValueError("Prompt cannot be empty")
 
         if "json" not in prompt.lower():
-            prompt += " Please return the response in valid JSON format using the create_quiz function."
+            prompt += "  Returnera svaret i giltigt JSON-format med hjälp av funktionen create_quiz. Kategorin ska vara 'ORD'."
 
         user_messages = {
             "role": "user",
@@ -94,7 +94,7 @@ class OpenAIClient:
         messages = [
             {
                 "role": "system",
-                "content": "You are a helpful assistant that creates quizzes in JSON format."
+                "content": "Du är en hjälpsam assistent som skapar quiz i JSON-format."
             },
             user_messages
         ]
@@ -102,7 +102,7 @@ class OpenAIClient:
         functions = [
             {
                 "name": "create_quiz",
-                "description": "Creates a multiple-choice quiz",
+                "description": "Skapa ett flervalsquiz.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -155,7 +155,7 @@ class QuizAPIClient:
         self.auth_token = os.getenv("AUTH_TOKEN")
         if not self.api_route or not self.auth_token:
             raise ValueError("API route and auth token are required")
-        
+
     def create_quiz(self, quiz_data):
         """
         Create a quiz using the provided quiz data.
