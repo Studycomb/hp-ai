@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hp-ai"
+version = "0.1.0"
+description = "A tool for generating quiz questions using OpenAI"
+readme = "README.md"
+authors = [{ name = "Dennis Lundberg", email = "lundbergg.dev@proton.me" }]
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.8"
+dependencies = ["openai", "python-dotenv", "openai-responses", "questionary"]
+
+[project.urls]
+"Homepage" = "https://github.com/Studycomb/hp-ai"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov"]
