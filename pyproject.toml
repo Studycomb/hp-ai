@@ -7,7 +7,7 @@ name = "hp-ai"
 version = "0.1.0"
 description = "A tool for generating quiz questions using OpenAI"
 readme = "README.md"
-authors = [{ name = "Dennis Lundberg", email = "lundbergg.dev@proton.me" }]
+authors = [{ name = "Dennis Lundberg", email = "lundbergg.dev@proton.me" }, { name = "Younes Slibi", email = "younes.sleibi2000@gmail.com" }]
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 classifiers = [
