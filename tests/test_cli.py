@@ -1,10 +1,9 @@
 import os
 import pytest
 from unittest import mock
-import argparse
 import tempfile
 
-from hp_ai.cli import CLIHandler
+from src.hp_ai.cli import CLIHandler
 
 
 class TestCLIHandler:

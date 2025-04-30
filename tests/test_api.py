@@ -4,7 +4,7 @@ import os
 import openai_responses
 from openai_responses import OpenAIMock
 
-from hp_ai.api import OpenAIClient
+from src.hp_ai.api import OpenAIClient
 
 
 @openai_responses.mock()

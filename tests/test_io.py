@@ -4,7 +4,7 @@ import tempfile
 from unittest import mock
 from tomllib import TOMLDecodeError
 
-from hp_ai.io import PromptManager, DocumentManager
+from src.hp_ai.io import PromptManager, DocumentManager
 
 
 class TestPromptManager:
