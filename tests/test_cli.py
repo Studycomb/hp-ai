@@ -1,7 +1,8 @@
 import os
-import pytest
-from unittest import mock
 import tempfile
+from unittest import mock
+
+import pytest
 
 from src.hp_ai.cli import CLIHandler
 

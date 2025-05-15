@@ -1,10 +1,11 @@
 import os
-import pytest
 import tempfile
 from unittest import mock
+
+import pytest
 from tomllib import TOMLDecodeError
 
-from src.hp_ai.io import PromptManager, DocumentManager
+from src.hp_ai.io import DocumentManager, PromptManager
 
 
 class TestPromptManager:

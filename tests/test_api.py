@@ -1,7 +1,8 @@
-import pytest
-from unittest.mock import patch
 import os
+from unittest.mock import patch
+
 import openai_responses
+import pytest
 from openai_responses import OpenAIMock
 
 from src.hp_ai.api import OpenAIClient

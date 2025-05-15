@@ -1,7 +1,6 @@
-from . import api
-from . import cli
-from . import io
 import json
+
+from . import api, cli, io
 
 
 def main():

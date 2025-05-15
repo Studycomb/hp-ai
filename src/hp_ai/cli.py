@@ -1,6 +1,7 @@
 import argparse
-import questionary
 import os
+
+import questionary
 
 
 class CLIHandler:
