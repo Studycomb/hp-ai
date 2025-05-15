@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+
 class OpenAIClient:
     def __init__(self, api_key=None, model=None):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
@@ -76,27 +77,21 @@ class OpenAIClient:
         user_messages = {
             "role": "user",
             "content": [],
-            }
+        }
 
         for file_id in self.file_id_list:
-            user_messages["content"].append({
-                "type": "file",
-                "file": {
-                    "file_id": file_id
-                }
-            })
+            user_messages["content"].append(
+                {"type": "file", "file": {"file_id": file_id}}
+            )
 
-        user_messages["content"].append({
-            "type": "text",
-            "text": prompt
-        })
+        user_messages["content"].append({"type": "text", "text": prompt})
 
         messages = [
             {
                 "role": "system",
-                "content": "Du är en hjälpsam assistent som skapar quiz i JSON-format."
+                "content": "Du är en hjälpsam assistent som skapar quiz i JSON-format.",
             },
-            user_messages
+            user_messages,
         ]
 
         functions = [
@@ -121,18 +116,18 @@ class OpenAIClient:
                                             "type": "object",
                                             "properties": {
                                                 "option_text": {"type": "string"},
-                                                "is_correct": {"type": "boolean"}
+                                                "is_correct": {"type": "boolean"},
                                             },
-                                            "required": ["option_text", "is_correct"]
-                                        }
-                                    }
+                                            "required": ["option_text", "is_correct"],
+                                        },
+                                    },
                                 },
-                                "required": ["question", "image", "alternatives"]
-                            }
-                        }
+                                "required": ["question", "image", "alternatives"],
+                            },
+                        },
                     },
-                    "required": ["title", "category", "questions"]
-                }
+                    "required": ["title", "category", "questions"],
+                },
             }
         ]
 
@@ -143,7 +138,7 @@ class OpenAIClient:
             functions=functions,
             function_call={"name": "create_quiz"},
             max_tokens=int(os.getenv("MAX_TOKENS", 1000)),
-            temperature=float(os.getenv("TEMPERATURE", 0.7))
+            temperature=float(os.getenv("TEMPERATURE", 0.7)),
         )
 
         return response.choices[0].message.function_call.arguments
@@ -166,8 +161,8 @@ class QuizAPIClient:
             self.api_route,
             json=quiz_data,
             headers={
-            "Authorization": f"Bearer {self.auth_token}",
-            "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.auth_token}",
+                "Content-Type": "application/json",
             },
         )
         if response.status_code != 200:
@@ -175,4 +170,3 @@ class QuizAPIClient:
 
         print("Status Code:", response.status_code)
         print("Response:", response.json())
-

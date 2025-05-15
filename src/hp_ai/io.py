@@ -1,6 +1,7 @@
 import os
 import tomllib
 
+
 class PromptManager:
     def __init__(self, prompt_file):
         self.prompt_file = prompt_file
@@ -15,6 +16,7 @@ class PromptManager:
 
     def get_prompt(self, prompt_name):
         return self.prompts[prompt_name]
+
 
 class DocumentManager:
     def __init__(self, doc_folder):

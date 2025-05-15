@@ -3,12 +3,13 @@ from . import cli
 from . import io
 import json
 
+
 def main():
     # Initialize components
     cli_handler = cli.CLIHandler()
     document_manager = io.DocumentManager(cli_handler.get_document_folder())
     prompt_manager = io.PromptManager(cli_handler.get_prompt_file())
-    quizClient =  api.QuizAPIClient()
+    quizClient = api.QuizAPIClient()
 
     # Get available PDF files and prompts
     documents = document_manager.get_documents()
