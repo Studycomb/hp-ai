@@ -289,7 +289,7 @@ class TestCLIHandler:
         result = cli_handler.confirm_continue()
 
         # Verify questionary was called correctly
-        mock_confirm.assert_called_once_with("Do you want to continue?")
+        mock_confirm.assert_called_once_with(message="Do you want to continue?")
 
         # Verify result
         assert result is True
