@@ -4,9 +4,6 @@ import requests
 from dotenv import load_dotenv
 from openai import OpenAI
 
-# Load environment variables
-load_dotenv()
-
 
 class OpenAIClient:
     def __init__(self, api_key=None, model=None):

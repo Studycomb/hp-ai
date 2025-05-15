@@ -14,12 +14,14 @@ class CLIHandler:
             description="HP-AI - A tool for generating quiz questions using OpenAI"
         )
         parser.add_argument(
+            "-d",
             "--doc-folder",
             help="Path to folder containing documents",
-            default="./pdfs",
+            default=".",
             type=str,
         )
         parser.add_argument(
+            "-p",
             "--prompt-file",
             help="Path to file with prompts",
             default="./prompts.toml",
@@ -60,7 +62,7 @@ class CLIHandler:
             choices=prompts,
         ).unsafe_ask()
 
-    def confirm_continue(self):
+    def confirm_continue(self, message="Do you want to continue?"):
         return questionary.confirm(
-            "Do you want to continue?",
+            message=message,
         ).ask()

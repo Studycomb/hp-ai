@@ -21,13 +21,16 @@ class PromptManager:
 
 class DocumentManager:
     def __init__(self, doc_folder):
+        self.supported_extensions = [".pdf", ".txt"]
         self.doc_folder = doc_folder
 
     def get_documents(self):
         documents = []
         for filename in os.listdir(self.doc_folder):
             file_path = os.path.join(self.doc_folder, filename)
-            if os.path.isfile(file_path):
+            if os.path.isfile(file_path) and filename.endswith(
+                tuple(self.supported_extensions)
+            ):
                 documents.append(filename)
         return documents
 
