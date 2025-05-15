@@ -16,14 +16,14 @@ class CLIHandler:
         parser.add_argument(
             "-d",
             "--doc-folder",
-            help="Path to folder containing documents",
+            help="Path to folder containing documents, default is current directory",
             default=".",
             type=str,
         )
         parser.add_argument(
             "-p",
             "--prompt-file",
-            help="Path to file with prompts",
+            help="Path to file with prompts, default is prompts.toml",
             default="./prompts.toml",
             type=str,
         )
