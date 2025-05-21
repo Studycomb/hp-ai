@@ -50,6 +50,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+junit/
 
 # Translations
 *.mo
@@ -169,3 +170,6 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# PDF files
+*.pdf
